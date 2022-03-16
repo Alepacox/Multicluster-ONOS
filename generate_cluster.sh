@@ -1,12 +1,11 @@
 #!/bin/bash
 
 #set -e
-ONOS_ROOT="onos"
+
 name_net=onos_clusters
 net=172.168.7.0
 sub=/24
 ip_counter=1
-onos_counter=1
 
 usage() { echo "Usage: $0 [-c >1&<10] [-o >1&<10] [-a >1&<10] " 1>&2; exit 1; }
 
@@ -53,7 +52,7 @@ create_atomix_configs() {
     done
     for ((i=0; i<$a; i++))
     do
-        ./onos/tools/test/bin/atomix-gen-config ${atomix_cluster[$i]} conf/cluster$1/atomix-$i.conf ${atomix_cluster[@]}
+        $ONOS_ROOT/tools/test/bin/atomix-gen-config ${atomix_cluster[$i]} conf/cluster$1/atomix-$i.conf ${atomix_cluster[@]}
         docker run -d --mount type=bind,source=$(pwd)/conf/cluster$1/atomix-$i.conf,target=/opt/atomix/conf/atomix.conf --net ${name_net} --ip ${atomix_cluster[$i]} --name cluster$1_atomix_$i atomix/atomix:3.1.5
     done
 }
@@ -68,7 +67,7 @@ create_onos_configs() {
     done
     for ((i=0; i<$o; i++))
     do
-        ./onos/tools/test/bin/onos-gen-config ${onos_cluster[$i]} conf/cluster$1/cluster-$i.json -n ${atomix_cluster[@]}
+        $ONOS_ROOT/tools/test/bin/onos-gen-config ${onos_cluster[$i]} conf/cluster$1/cluster-$i.json -n ${atomix_cluster[@]}
         docker run -d --mount type=bind,source=$(pwd)/conf/cluster$1/cluster-$i.json,target=/root/onos/config/cluster.json --net ${name_net} --ip ${onos_cluster[$i]} --name cluster$1_onos_$i onosproject/onos:latest
     done
 }
