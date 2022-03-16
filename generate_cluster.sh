@@ -7,7 +7,10 @@ net=172.168.7.0
 sub=/24
 ip_counter=1
 
-usage() { echo "Usage: $0 [-c >1&<10] [-o >1&<10] [-a >1&<10] " 1>&2; exit 1; }
+usage() { echo -e "Usage: $0 [-c >1&<10] [-o >1&<10] [-a >1&<10] \n \
+-c --> number of clusters to be generated \n \
+-o --> number of onos controllers per cluster \n \
+-a --> number of atomix nodes per cluster" 1>&2; exit 1; }
 
 while getopts ":c:o:a:" s; do
     case "${s}" in
