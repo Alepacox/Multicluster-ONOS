@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#set -e
+set -e
 
 name_net=onos_clusters
 net=172.168.7.0
@@ -37,12 +37,29 @@ if [ -z "${c}" ] || [ -z "${o}" ] || [ -z "${a}" ]; then
     usage
 fi
 
-echo "# of clusters = ${c}"
-echo "# of onos instances per cluster = ${o}"
-echo "# of atomix instances per cluster = ${a}"
+if docker ps -a -f "name=^cluster" | grep -q 'cluster'; then
+    read -p "Found old containers beloging to one or more ONOS clusters. Do you want to restart it or create a new one? [y|n] " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]
+    then
+        echo "Restarting previous clusters."
+        docker container start $(docker ps -a -q -f "name=^cluster")
+        exit 0
+    else 
+        echo "Removing previous clusters."
+        docker container stop $(docker ps -a -q -f "name=^cluster")
+        docker container rm $(docker ps -a -q -f "name=^cluster")
+    fi
+else
+    docker network create ${name_net} --driver=bridge --subnet=${net}${sub}
+    echo "Creating network ${name_net} on subnet ${net}"   
+fi
 
-docker network create ${name_net} --driver=bridge --subnet=${net}${sub}
-echo "Creating network ${name_net} on subnet ${net}"
+echo -e "\nUsing the following configuration: \n\
+# of clusters = ${c} \n\
+# of onos instances per cluster = ${o} \n\
+# of atomix instances per cluster = ${a}"
+
 
 create_atomix_configs() {
     atomix_cluster=()
@@ -55,6 +72,7 @@ create_atomix_configs() {
     done
     for ((i=0; i<$a; i++))
     do
+        echo -e "\nStarting Atomix nodes for cluster $1:"
         $ONOS_ROOT/tools/test/bin/atomix-gen-config ${atomix_cluster[$i]} conf/cluster$1/atomix-$i.conf ${atomix_cluster[@]}
         docker run -d --mount type=bind,source=$(pwd)/conf/cluster$1/atomix-$i.conf,target=/opt/atomix/conf/atomix.conf --net ${name_net} --ip ${atomix_cluster[$i]} --name cluster$1_atomix_$i atomix/atomix:3.1.5
     done
@@ -70,6 +88,7 @@ create_onos_configs() {
     done
     for ((i=0; i<$o; i++))
     do
+        echo -e "\nStarting ONOS controllers for cluster $1 with IP:"
         $ONOS_ROOT/tools/test/bin/onos-gen-config ${onos_cluster[$i]} conf/cluster$1/cluster-$i.json -n ${atomix_cluster[@]}
         docker run -d --mount type=bind,source=$(pwd)/conf/cluster$1/cluster-$i.json,target=/root/onos/config/cluster.json --net ${name_net} --ip ${onos_cluster[$i]} --name cluster$1_onos_$i onosproject/onos:latest
     done
