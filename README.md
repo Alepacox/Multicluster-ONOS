@@ -12,7 +12,7 @@ The configuration files are generated using the scripts provided within the ONOS
 For this reason, you should have a local copy of that repository and which should be pointed by the $ONOS_ROOT env variable.
 
 Once generated the clusters, the script will ask for generating Mininet nets.
-After choosing the net size, a new net will be attached to each of the ONOS controllers of each cluster.
+After choosing the net size, a separated net with same size will be attached to each of the ONOS controllers of each cluster.
 A custom docker for Mininet will be generated handling all the nets, and that will let you attach to each of them by spawning a CLI at runtime.
 
 
