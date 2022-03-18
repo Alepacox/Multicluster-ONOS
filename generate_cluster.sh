@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#set -e
+set -e
 
 name_net=onos_clusters
 net=172.168.7.0
@@ -90,16 +90,20 @@ create_onos_configs() {
 }
 
 create_topologies() {
-    read -p "Would you like to create a subnet for each ONOS? [y|n]" -n 1 -r
+    echo
+    read -p "Would you like to create a subnet for each ONOS? [y|n] " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]
     then
         if ! docker image ls | grep -q 'mininet_custom';
         then
-            docker build -t mininet_custom .
+            echo "Generating custom mininet docker image."
+            docker build -q -t mininet_custom -f CustomMininet .
         fi
         if docker ps -a | grep -q 'mininet_custom'; 
         then
+            echo "Cleaning up old mininet container."
+            docker stop mininet_custom
             docker rm mininet_custom
         fi
         read -p "Enter depth: " depth
@@ -119,12 +123,25 @@ create_cluster() {
         mkdir -p conf/cluster$myc
         create_atomix_configs $myc
         create_onos_configs $myc
-        create_topologies
     done
 
 }
 
 create_cluster
+
+create_topologies
+
+read -p "Would you like to stop and remove the containers? [y|n]" -n 1 -r
+echo
+if [[ $REPLY =~ ^[Yy]$ ]]
+then 
+    docker container stop $(docker ps -a -q -f "name=^cluster")
+    docker container rm $(docker ps -a -q -f "name=^cluster")
+    docker container rm mininet_custom
+    echo "Done!"
+else 
+    exit 0
+fi
 
 
 

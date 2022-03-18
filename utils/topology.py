@@ -51,7 +51,7 @@ def run(controllers, depth, fanout):
                 print("Please provide a valid net number.\n")
                 pass
     except KeyboardInterrupt:
-        print("********Stopping all nets********\n")
+        print('\n********Stopping all nets********\n')
         for net in nets:
             net[1].stop()
 
@@ -63,5 +63,4 @@ if __name__ == '__main__':
     parser.add_argument("controllers", help="The IP of the ONOS controller.", type=str, nargs="+")
     setLogLevel('info')
     args = parser.parse_args()
-    print(args.controllers)
     run(args.controllers, args.depth, args.fanout)
