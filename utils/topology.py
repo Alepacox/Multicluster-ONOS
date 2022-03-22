@@ -9,23 +9,25 @@ import argparse
 class MyTreeTopo( Topo):
     hostNum = 1
     switchNum = 1
-    subnet = 1
+    subnet = 0
     localip=1
     
-    def build( self, depth, fanout):
-        self.addTree( depth, fanout)
+    def build( self, depth, fanout, net):
+        self.net=net
+        self.addTree(depth, fanout)
         MyTreeTopo.subnet+=1
 
     def addTree( self, depth, fanout):
         isSwitch = depth > 0
         if isSwitch:
-            node = self.addSwitch( 's%s' % MyTreeTopo.switchNum, dpid="00000000000000"+str(MyTreeTopo.switchNum), protocols="OpenFlow13" )
-            MyTreeTopo.switchNum += 1
+            mydpid = self.net+str(self.switchNum).rjust(15-len(str(self.net))+len(str(self.switchNum)), '0')
+            node = self.addSwitch("n"+self.net+"_s"+str(self.switchNum), dpid=mydpid, protocols="OpenFlow13" )
+            self.switchNum += 1
             for _ in range( fanout ):
                 child = self.addTree( depth - 1, fanout)
                 self.addLink( node, child)
         else:
-            node = self.addHost( 'h%s' % MyTreeTopo.hostNum, ip='10.10.'+str(MyTreeTopo.subnet)+'.'+str(self.localip))
+            node = self.addHost("h"+str(MyTreeTopo.hostNum), ip='10.10.'+str(MyTreeTopo.subnet)+'.'+str(self.localip))
             self.localip+=1
             MyTreeTopo.hostNum += 1
         return node
@@ -38,7 +40,7 @@ def run(controllers, depth=1, fanout=1):
             netname="net"+str(len(nets))
             print("\n********Strarting "+netname+" with attached to controller "+controller+"********")
             c = RemoteController(controller, controller)
-            topo = MyTreeTopo(depth, fanout) 
+            topo = MyTreeTopo(depth, fanout, str(len(nets))) 
             net = Mininet(topo=topo, controller=c)
             net.start()
             nets.append((netname,net))
