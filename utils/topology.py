@@ -5,6 +5,7 @@ from mininet.node import RemoteController
 from mininet.cli import CLI
 from mininet.node import RemoteController
 import argparse
+import os
 
 class MyTreeTopo( Topo):
     hostNum = 1
@@ -61,6 +62,7 @@ def run(controllers, depth=1, fanout=1):
         print('\n********Stopping all nets********\n')
         for net in nets:
             net[1].stop()
+        os.system("mn -c")
 
 # if the script is run directly (sudo custom/optical.py):
 if __name__ == '__main__':
