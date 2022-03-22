@@ -74,6 +74,7 @@ create_atomix_configs() {
 
 create_onos_configs() {
     onos_cluster=()
+    export ONOS_APPS="openflow"
     for ((i=1; i<=$o; i++))
     do
         ip_counter=$((ip_counter+1))
@@ -85,7 +86,7 @@ create_onos_configs() {
     do
         echo -e "\nStarting ONOS controllers for cluster $1 with IP:"
         $ONOS_ROOT/tools/test/bin/onos-gen-config ${onos_cluster[$i]} conf/cluster$1/cluster-$i.json -n ${atomix_cluster[@]}
-        docker run -d --mount type=bind,source=$(pwd)/conf/cluster$1/cluster-$i.json,target=/root/onos/config/cluster.json --net ${name_net} --ip ${onos_cluster[$i]} --name cluster$1_onos_$i onosproject/onos:latest
+        docker run -d --mount type=bind,source=$(pwd)/conf/cluster$1/cluster-$i.json,target=/root/onos/config/cluster.json --net ${name_net} --ip ${onos_cluster[$i]} --env ONOS_APPS="drivers,openflow-base,hostprovider,proxyarp,lldpprovider,fwd,gui2" --name cluster$1_onos_$i onosproject/onos:latest
     done
 }
 

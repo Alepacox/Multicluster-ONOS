@@ -6,27 +6,32 @@ from mininet.cli import CLI
 from mininet.node import RemoteController
 import argparse
 
-class MyTreeTopo( Topo ):
+class MyTreeTopo( Topo):
     hostNum = 1
     switchNum = 1
+    subnet = 1
+    localip=1
+    
     def build( self, depth, fanout):
-        self.addTree( depth, fanout )
+        self.addTree( depth, fanout)
+        MyTreeTopo.subnet+=1
 
-    def addTree( self, depth, fanout ):
+    def addTree( self, depth, fanout):
         isSwitch = depth > 0
         if isSwitch:
-            node = self.addSwitch( 's%s' % MyTreeTopo.switchNum, dpid="00000000000000"+str(self.switchNum), protocols="OpenFlow13" )
+            node = self.addSwitch( 's%s' % MyTreeTopo.switchNum, dpid="00000000000000"+str(MyTreeTopo.switchNum), protocols="OpenFlow13" )
             MyTreeTopo.switchNum += 1
             for _ in range( fanout ):
-                child = self.addTree( depth - 1, fanout )
+                child = self.addTree( depth - 1, fanout)
                 self.addLink( node, child)
         else:
-            node = self.addHost( 'h%s' % MyTreeTopo.hostNum )
+            node = self.addHost( 'h%s' % MyTreeTopo.hostNum, ip='10.10.'+str(MyTreeTopo.subnet)+'.'+str(self.localip))
+            self.localip+=1
             MyTreeTopo.hostNum += 1
         return node
 
 
-def run(controllers, depth, fanout):
+def run(controllers, depth=1, fanout=1):
     nets= []
     try:
         for controller in controllers:
