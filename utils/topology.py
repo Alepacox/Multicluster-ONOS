@@ -34,17 +34,30 @@ class MyTreeTopo( Topo):
         return node
 
 
-def run(controllers, depth=1, fanout=1):
+def run(controllers, cluster_size, depth=1, fanout=1):
     nets= []
+    output=[controllers[i:i + cluster_size] for i in range(0, len(controllers), cluster_size)]
     try:
-        for controller in controllers:
-            netname="net"+str(len(nets))
-            print("\n********Strarting "+netname+" with attached to controller "+controller+"********")
-            c = RemoteController(controller, controller)
-            topo = MyTreeTopo(depth, fanout, str(len(nets))) 
-            net = Mininet(topo=topo, controller=c)
-            net.start()
-            nets.append((netname,net))
+        for cluster in output:
+            for controller in cluster:
+                netname="net"+str(len(nets))
+                print("\n********Strarting "+netname+" with attached to master controller "+controller+"********")
+
+                c = RemoteController(controller, controller)
+                topo = MyTreeTopo(depth, fanout, str(len(nets)))
+
+                #Master controller 
+                net = Mininet(topo=topo, controller=c)
+
+
+                net.start()
+                nets.append((netname,net))
+
+                #Standby controllers
+                for i in cluster:
+                    if i!=controller:
+                        net.addController(RemoteController(i, i))
+
         while True:
             print("\nHere is the list of nets currectly loaded:")
             for i in range(len(nets)):
@@ -67,9 +80,10 @@ def run(controllers, depth=1, fanout=1):
 # if the script is run directly (sudo custom/optical.py):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("topology.py")
-    parser.add_argument("depth", help="The IP of the ONOS controller.", type=int)
-    parser.add_argument("fanout", help="The IP of the ONOS controller.", type=int)
-    parser.add_argument("controllers", help="The IP of the ONOS controller.", type=str, nargs="+")
+    parser.add_argument("depth", help="Depth of the network to generate.", type=int)
+    parser.add_argument("fanout", help="Fanout of the network to generate ", type=int)
+    parser.add_argument("onos_cluster_size", help="Number of ONOS node per controllers", type=int)
+    parser.add_argument("controllers", help="The IP of the ONOS controllers.", type=str, nargs="+")
     setLogLevel('info')
     args = parser.parse_args()
     run(args.controllers, args.depth, args.fanout)

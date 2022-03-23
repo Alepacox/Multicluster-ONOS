@@ -110,7 +110,7 @@ create_topologies() {
         read -p "Enter depth: " depth
         read -p "Enter fanout: " fanout
         ip_counter=$((ip_counter+1))
-        docker run -it --privileged --name mininet_custom --net onos_clusters --ip ${net::-1}$(($ip_counter))  mininet_custom $depth $fanout ${onos_nodes[@]} 
+        docker run -it --privileged --name mininet_custom --net onos_clusters --ip ${net::-1}$(($ip_counter))  mininet_custom $depth $fanout $o ${onos_nodes[@]} 
     else 
         exit 0;
     fi
