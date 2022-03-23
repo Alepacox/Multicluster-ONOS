@@ -48,15 +48,12 @@ def run(controllers, cluster_size, depth=1, fanout=1):
 
                 #Master controller 
                 net = Mininet(topo=topo, controller=c)
-
-
-                net.start()
-                nets.append((netname,net))
-
                 #Standby controllers
                 for i in cluster:
                     if i!=controller:
                         net.addController(RemoteController(i, i))
+                net.start()
+                nets.append((netname,net))
 
         while True:
             print("\nHere is the list of nets currectly loaded:")
@@ -86,4 +83,4 @@ if __name__ == '__main__':
     parser.add_argument("controllers", help="The IP of the ONOS controllers.", type=str, nargs="+")
     setLogLevel('info')
     args = parser.parse_args()
-    run(args.controllers, args.depth, args.fanout)
+    run(args.controllers, args.onos_cluster_size, args.depth, args.fanout)
