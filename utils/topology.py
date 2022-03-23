@@ -39,21 +39,16 @@ def run(controllers, cluster_size, depth=1, fanout=1):
     output=[controllers[i:i + cluster_size] for i in range(0, len(controllers), cluster_size)]
     try:
         for cluster in output:
-            for controller in cluster:
-                netname="net"+str(len(nets))
-                print("\n********Strarting "+netname+" with attached to master controller "+controller+"********")
-
-                c = RemoteController(controller, controller)
-                topo = MyTreeTopo(depth, fanout, str(len(nets)))
-
-                #Master controller 
-                net = Mininet(topo=topo, controller=c)
-                #Standby controllers
-                for i in cluster:
-                    if i!=controller:
-                        net.addController(RemoteController(i, i))
-                net.start()
-                nets.append((netname,net))
+            netname="net"+str(len(nets))
+            print("\n********Strarting "+netname+" with attached to controllers "+str(cluster)+" ********")
+            topo = MyTreeTopo(depth, fanout, str(len(nets)))
+            controller = RemoteController(cluster[0],cluster[0])
+            net = Mininet(topo=topo, controller=controller)
+            for controller in cluster[1:]:
+                net.addController(RemoteController(controller, controller))
+            net.start()
+            nets.append((netname,net))
+                
 
         while True:
             print("\nHere is the list of nets currectly loaded:")
