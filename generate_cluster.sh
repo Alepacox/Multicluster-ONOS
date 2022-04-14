@@ -74,19 +74,21 @@ create_atomix_configs() {
 
 create_onos_configs() {
     onos_cluster=()
-    export ONOS_APPS="openflow"
     for ((i=1; i<=$o; i++))
     do
         ip_counter=$((ip_counter+1))
         node_ip=${net::-1}$(($ip_counter))
         onos_cluster+=($node_ip)
-        onos_nodes+=($node_ip)
+        if [[ $1 != "master" ]]
+        then 
+            onos_nodes+=($node_ip)
+        fi
     done
     for ((i=0; i<$o; i++))
     do
         echo -e "\nStarting ONOS controllers for cluster $1 with IP:"
         $ONOS_ROOT/tools/test/bin/onos-gen-config ${onos_cluster[$i]} conf/cluster$1/cluster-$i.json -n ${atomix_cluster[@]}
-        docker run -d --mount type=bind,source=$(pwd)/conf/cluster$1/cluster-$i.json,target=/root/onos/config/cluster.json --net ${name_net} --ip ${onos_cluster[$i]} --env ONOS_APPS="drivers,openflow-base,hostprovider,proxyarp,lldpprovider,fwd,gui2" --name cluster$1_onos_$i onosproject/onos:latest
+        docker run -d --expose=5908 --mount type=bind,source=$(pwd)/conf/cluster$1/cluster-$i.json,target=/root/onos/config/cluster.json --net ${name_net} --ip ${onos_cluster[$i]} --env ONOS_APPS="drivers,openflow-base,hostprovider,proxyarp,lldpprovider,fwd,gui2" --name cluster$1_onos_$i onosproject/onos:latest
     done
 }
 
@@ -128,7 +130,20 @@ create_cluster() {
 
 }
 
+create_master_cluster() {
+    read -p "Would you like to add a master cluster? [y|n]" -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]
+    then
+        mkdir -p conf/clustermaster
+        create_atomix_configs master
+        create_onos_configs master
+    fi
+}
+
 create_cluster
+
+create_master_cluster
 
 create_topologies
 
