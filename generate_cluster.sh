@@ -55,6 +55,9 @@ echo -e "\nUsing the following configuration: \n\
 
 onos_nodes=()
 
+current_port=8181
+current_grpc_port=5908
+
 create_atomix_configs() {
     atomix_cluster=()
     for ((i=1; i<=$a; i++))
@@ -86,9 +89,11 @@ create_onos_configs() {
     done
     for ((i=0; i<$o; i++))
     do
-        echo -e "\nStarting ONOS controllers for cluster $1 with IP:"
+        echo -e "\nStarting ONOS controllers for cluster $1 on main port $current_port and grpc port $current_grpc_port with IP:"
         $ONOS_ROOT/tools/test/bin/onos-gen-config ${onos_cluster[$i]} conf/cluster$1/cluster-$i.json -n ${atomix_cluster[@]}
-        docker run -d --expose=5908 --mount type=bind,source=$(pwd)/conf/cluster$1/cluster-$i.json,target=/root/onos/config/cluster.json --net ${name_net} --ip ${onos_cluster[$i]} --env ONOS_APPS="drivers,openflow-base,hostprovider,proxyarp,lldpprovider,fwd,gui2" --name cluster$1_onos_$i onosproject/onos:latest
+        docker run -d --mount type=bind,source=$(pwd)/conf/cluster$1/cluster-$i.json,target=/root/onos/config/cluster.json --net ${name_net} --ip ${onos_cluster[$i]} -p $current_port:8181 -p $current_grpc_port:5908 --env ONOS_APPS="drivers,openflow-base,hostprovider,proxyarp,lldpprovider,fwd,gui2" --name cluster$1_onos_$i onosproject/onos:latest
+        current_port=$((current_port+1))
+        current_grpc_port=$((current_grpc_port+1))
     done
 }
 
@@ -120,32 +125,22 @@ create_topologies() {
 }
 
 create_cluster() {
-    
-    for ((myc=1; myc<=$c; myc++))
-    do
-        mkdir -p conf/cluster$myc
-        create_atomix_configs $myc
-        create_onos_configs $myc
-    done
-
+    mkdir -p conf/cluster$1
+    create_atomix_configs $1
+    create_onos_configs $1
 }
 
-create_master_cluster() {
-    read -p "Would you like to add a master cluster? [y|n]" -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]
-    then
-        mkdir -p conf/clustermaster
-        create_atomix_configs master
-        create_onos_configs master
-    fi
-}
+read -p "Is this a master cluster? [y|n]" -n 1 -r
+echo
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+    create_cluster master
+else
+    create_cluster worker
+    create_topologies
+fi
 
-create_cluster
 
-create_master_cluster
-
-create_topologies
 
 read -p "Would you like to stop and remove the containers? [y|n]" -n 1 -r
 echo
