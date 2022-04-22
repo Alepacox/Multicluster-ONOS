@@ -82,10 +82,7 @@ create_onos_configs() {
         ip_counter=$((ip_counter+1))
         node_ip=${net::-1}$(($ip_counter))
         onos_cluster+=($node_ip)
-        if [[ $1 != "master" ]]
-        then 
-            onos_nodes+=($node_ip)
-        fi
+        onos_nodes+=($node_ip)
     done
     for ((i=0; i<$o; i++))
     do
@@ -125,20 +122,16 @@ create_topologies() {
 }
 
 create_cluster() {
-    mkdir -p conf/cluster$1
-    create_atomix_configs $1
-    create_onos_configs $1
+    for ((myc=1; myc<=$c; myc++))
+    do
+        mkdir -p conf/cluster$myc
+        create_atomix_configs $myc
+        create_onos_configs $myc
+    done  
 }
 
-read -p "Is this a master cluster? [y|n]" -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]
-then
-    create_cluster master
-else
-    create_cluster worker
-    create_topologies
-fi
+create_cluster
+create_topologies
 
 
 
