@@ -16,6 +16,9 @@ After choosing the net size, a separated net with same size will be attached to 
 A custom docker for Mininet will be generated handling all the nets, and that will let you attach to each of them by spawning a CLI at runtime.
 
 
+### In this branch, each ONOS has mapped ports on the host, so that this cluster can be accessed remotely.
+
+
 ## How to use
 Just run: `./generate_cluster.sh -c 2 -o 2 -a 3`
 
