@@ -21,17 +21,14 @@ class MyTreeTopo( Topo):
     def addTree( self, depth, fanout):
         isSwitch = depth > 0
         if isSwitch:
-            mydpid = self.net+str(self.switchNum).rjust(14-len(str(self.net))+len(str(self.switchNum)), '0')
+            mydpid = str(self.net)+str(self.switchNum).rjust(16, '0')[len(str(self.net)):]
             node = self.addSwitch("n"+self.net+"_s"+str(self.switchNum), dpid=mydpid, protocols="OpenFlow13" )
             self.switchNum += 1
             for _ in range( fanout ):
                 child = self.addTree( depth - 1, fanout)
-                self.addLink( node, child)
-        else:
-            node = self.addHost("h"+str(MyTreeTopo.hostNum), ip='10.10.'+str(MyTreeTopo.subnet)+'.'+str(self.localip))
-            self.localip+=1
-            MyTreeTopo.hostNum += 1
-        return node
+                if child != None:
+                    self.addLink( node, child)
+            return node
 
 
 def run(controllers, cluster_size, depth=1, fanout=1):
