@@ -21,7 +21,7 @@ class MyTreeTopo( Topo):
     def addTree( self, depth, fanout):
         isSwitch = depth > 0
         if isSwitch:
-            mydpid = self.net+str(self.switchNum).rjust(14-len(str(self.net))+len(str(self.switchNum)), '0')
+            mydpid = str(self.net)+str(self.switchNum).rjust(16, '0')[len(str(self.net)):]
             node = self.addSwitch("n"+self.net+"_s"+str(self.switchNum), dpid=mydpid, protocols="OpenFlow13" )
             self.switchNum += 1
             for _ in range( fanout ):
