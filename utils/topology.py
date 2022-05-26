@@ -3,15 +3,28 @@ from mininet.net import Mininet
 from mininet.log import setLogLevel
 from mininet.node import RemoteController
 from mininet.cli import CLI
-from mininet.node import RemoteController
+from mininet.node import RemoteController, Intf, Link
 import argparse
 import os
 
+vethlists = [
+    "veth0",
+]
+
+vethpairs = {
+    "n0_s1": ["veth0a"],
+    "n1_s1": ["veth0b"]
+}
+
 class MyTreeTopo( Topo):
-    hostNum = 1
     switchNum = 1
     subnet = 0
-    localip=1
+    first = True
+
+    def addIntfPair(self, switch):
+        if (vethpairs.get(switch)):
+            for veth in vethpairs[switch]:
+                self.addLink(switch, switch, cls=NullLink, intfName1=veth, cls2=NullIntf)
     
     def build( self, depth, fanout, net):
         self.net=net
@@ -22,21 +35,40 @@ class MyTreeTopo( Topo):
         isSwitch = depth > 0
         if isSwitch:
             mydpid = str(self.net)+str(self.switchNum).rjust(16, '0')[len(str(self.net)):]
-            node = self.addSwitch("n"+self.net+"_s"+str(self.switchNum), dpid=mydpid, protocols="OpenFlow13" )
+            name = "n"+self.net+"_s"+str(self.switchNum)
+            node = self.addSwitch(name, dpid=mydpid, protocols="OpenFlow13" )
+            self.addIntfPair(name)
             self.switchNum += 1
             for _ in range( fanout ):
                 child = self.addTree( depth - 1, fanout)
-                self.addLink( node, child)
-        else:
-            node = self.addHost("h"+str(MyTreeTopo.hostNum), ip='10.10.'+str(MyTreeTopo.subnet)+'.'+str(self.localip))
-            self.localip+=1
-            MyTreeTopo.hostNum += 1
-        return node
+                if child != None:
+                    self.addLink( node, child)
+            return node
+
+class NullIntf( Intf ):
+    def __init__( self, name, **params ):
+        self.name = ''
+
+class NullLink( Link ):
+    def makeIntfPair( cls, intf1, intf2, *args, **kwargs ):
+        pass
+    def delete( self ):
+        pass
+    
+
+def createVeth():
+    for item in vethlists:
+        os.system("ip link add "+item+"a type veth peer name "+item+"b")
+
+def deleteVeth():
+    for item in vethlists:
+        os.system("sudo ip link delete "+item+"a")
 
 
 def run(controllers, cluster_size, depth=1, fanout=1):
     nets= []
     output=[controllers[i:i + cluster_size] for i in range(0, len(controllers), cluster_size)]
+    createVeth()
     try:
         for cluster in output:
             netname="net"+str(len(nets))
@@ -48,7 +80,6 @@ def run(controllers, cluster_size, depth=1, fanout=1):
                 net.addController(RemoteController(controller, controller))
             net.start()
             nets.append((netname,net))
-                
 
         while True:
             print("\nHere is the list of nets currectly loaded:")
@@ -67,9 +98,9 @@ def run(controllers, cluster_size, depth=1, fanout=1):
         print('\n********Stopping all nets********\n')
         for net in nets:
             net[1].stop()
+        deleteVeth()
         os.system("mn -c")
 
-# if the script is run directly (sudo custom/optical.py):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("topology.py")
     parser.add_argument("depth", help="Depth of the network to generate.", type=int)
